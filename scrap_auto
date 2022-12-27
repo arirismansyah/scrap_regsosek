@@ -1,0 +1,267 @@
+from pywinauto.application import Application
+import pywinauto
+from pywinauto import *
+from time import sleep
+from tqdm import tqdm
+from pywinauto.timings import wait_until, wait_until_passes
+
+
+def insert_item(kode_prov, kode_kab, kode_kec, kode_desa, kode_sls, kode_sub_sls, nama_sls, r107, r108, r109, r110, r111, r112, r113, r114, r115, art, key_idsls_no_kv):
+    import mariadb
+    connection = mariadb.connect(
+    host="10.16.8.100",
+    user="root",
+    password="",
+    database='regsosek_entri'
+    )
+    cursor = connection.cursor()
+
+    query_select = '''SELECT * FROM data_entri WHERE key_idsls_no_kv = %s'''
+    val_select = (key_idsls_no_kv)
+    select_res = cursor.execute(query_select, val_select)
+    connection.commit()
+
+    if(select_res):
+        update_item(kode_prov, kode_kab, kode_kec, kode_desa, kode_sls, kode_sub_sls, nama_sls, r107, r108, r109, r110, r111, r112, r113, r114, r115, art, key_idsls_no_kv)
+    else:
+        query = '''INSERT INTO data_entri 
+        (kode_prov, 
+        kode_kab,
+        kode_kec, 
+        kode_desa, 
+        kode_sls, 
+        kode_sub_sls, 
+        nama_sls, 
+        alamat,
+        nama_kk,
+        no_urut_bangunan,
+        no_urut_verifikasi,
+        status_keluarga,
+        jumlah_art,
+        id_wilkerstat,
+        no_kk,
+        kode_kk,
+        art,
+        key_idsls_no_kv) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'''
+        values = (kode_prov, kode_kab, kode_kec, kode_desa, kode_sls, kode_sub_sls, nama_sls, r107, r108, int(r109), int(r110), int(r111), r112, r113, r114, int(r115), art, key_idsls_no_kv)
+        cursor.execute(query, values)
+        connection.commit()
+
+
+def update_item(kode_prov, kode_kab, kode_kec, kode_desa, kode_sls, kode_sub_sls, nama_sls, r107, r108, r109, r110, r111, r112, r113, r114, r115, art, key_idsls_no_kv):
+    import mariadb
+    connection = mariadb.connect(
+    host="10.16.8.100",
+    user="root",
+    password="",
+    database='regsosek_entri'
+    )
+    cursor = connection.cursor()
+    query = '''UPDATE data_entri SET
+    (kode_prov, 
+    kode_kab,
+    kode_kec, 
+    kode_desa, 
+    kode_sls, 
+    kode_sub_sls, 
+    nama_sls, 
+    alamat,
+    nama_kk,
+    no_urut_bangunan,
+    no_urut_verifikasi,
+    status_keluarga,
+    jumlah_art,
+    id_wilkerstat,
+    no_kk,
+    kode_kk,
+    art) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    WHERE key_idsls_no_kv = %s'''
+    values = (kode_prov, kode_kab, kode_kec, kode_desa, kode_sls, kode_sub_sls, nama_sls, r107, r108, int(r109), int(r110), int(r111), r112, r113, r114, int(r115), art, key_idsls_no_kv)
+    cursor.execute(query, values)
+    connection.commit()
+
+def get_data(app, app_dlg, list_k, nu_vk_max, n, n_loop):
+    if (n==n_loop-1):
+        jml_k = len(list_k)
+    else:
+        jml_k = len(list_k)-1
+    
+    for index_k in range(0, jml_k):
+        
+        app.window(best_match='Regsosek 2022').wait('visible enabled', 60)  
+        sleep(2)       
+           
+        try:
+            list_k[index_k].select()
+        except:
+            list_k[index_k].click_input()
+            list_k[index_k].click_input()
+        
+        try_get_details = True
+
+        while(try_get_details):
+            try:
+                entry_btn = app_dlg.child_window(title="[F12] Entry", control_type="Button")
+                entry_btn.click()
+                
+                app.window(best_match='Dialog0').wait('visible', 60)
+                entry_dlg = app.window(best_match='Dialog0')
+
+                tab_hal_2 = entry_dlg.child_window(title="Halaman 2", control_type="TabItem")
+                close_btn = entry_dlg.child_window(auto_id="btnClose", control_type="Button")
+            
+                kode_prov = entry_dlg.child_window(auto_id="kode_prov", control_type="Edit").window_text()
+                kode_kab = entry_dlg.child_window(auto_id="kode_kab", control_type="Edit").window_text()
+                kode_kec = entry_dlg.child_window(auto_id="kode_kec", control_type="Edit").window_text()
+                kode_desa = entry_dlg.child_window(auto_id="kode_desa", control_type="Edit").window_text()
+                kode_sls = entry_dlg.child_window(auto_id="kode_sls", control_type="Edit").window_text()
+                kode_sub_sls = entry_dlg.child_window(auto_id="kode_subsls", control_type="Edit").window_text()
+                nama_sls = entry_dlg.child_window(auto_id="sls_nama", control_type="Edit").window_text()
+                r107 = entry_dlg.child_window(auto_id="alamat_temp", control_type="Edit").window_text()
+                r108 = entry_dlg.child_window(auto_id="r108_temp", control_type="Edit").window_text()
+                r109 = entry_dlg.child_window(auto_id="r109", control_type="Edit").window_text()
+                r110 = entry_dlg.child_window(auto_id="r110", control_type="Edit").window_text()
+                r111 = entry_dlg.child_window(auto_id="r111", control_type="Edit").window_text()
+                r112 = entry_dlg.child_window(auto_id="r112", control_type="Edit").window_text()
+                r113 = entry_dlg.child_window(auto_id="r113", control_type="Edit").window_text()
+                r114 = entry_dlg.child_window(auto_id="r114_temp", control_type="Edit").window_text()
+                r115 = entry_dlg.child_window(auto_id="r115", control_type="Edit").window_text()
+                keys = kode_prov+kode_kab+kode_kec+kode_desa+kode_sls+kode_sub_sls+'_'+r110
+                
+
+                tab_hal_2.select()
+                list_art = entry_dlg.children()[1].children(title='Halaman 2')[0].children()[1].children()[0].children(control_type='Pane')[0].children(control_type='Pane')[0].children(control_type='Custom')
+                list_data_art = []
+                for art in list_art:
+                    r401 = art.children()[0].children(control_type="Edit")[0].window_text()
+                    r402 = art.children()[0].children(control_type="Edit")[1].window_text()
+                    r403 = art.children()[0].children(control_type="Edit")[2].window_text()
+                    data_art = {'r401':r401, 'r402':r402, 'r403':r403}
+                    list_data_art.append(data_art)
+                
+                import json
+                data_art_json = json.dumps(list_data_art)
+
+                insert_item(kode_prov=kode_prov, kode_kab=kode_kab, kode_kec=kode_kec, kode_desa=kode_desa, kode_sls=kode_sls, kode_sub_sls=kode_sub_sls, nama_sls=nama_sls, r107=r107, r108=r108, r109=r109, r110=r110, r111=r111, r112=r112, r113=r113, r114=r114, r115=r115, art=data_art_json, key_idsls_no_kv=keys)
+
+                close_btn.click()
+                entry_dlg.descendants(title='No', control_type='Button')[0].click()
+                sleep(2)
+                app.window(best_match='Regsosek 2022').wait('visible enabled', 60)
+
+                try_get_details = False  
+            
+            except:
+                if(len(app_dlg.descendants(title='Error'))>0):
+                    app_dlg.descendants(title='OK')[0].type_keys('{ENTER}')
+                    try:
+                        app = Application(backend='uia').connect(best_match='Regsosek 2022')
+                        app_dlg = app.window(best_match='Regsosek 2022')
+                        list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                        list_k[index_k].select()
+                    except:
+                        app = Application(backend='uia').connect(best_match='Regsosek 2022')
+                        app_dlg = app.window(best_match='Regsosek 2022')
+                        list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                        list_k[index_k].click_input()
+                        list_k[index_k].click_input()
+            
+def scrap_regsosek(idx_start_kab:int, idx_end_kab:int):
+    app = Application(backend='uia').connect(best_match='Regsosek 2022')
+    app_dlg = app.window(best_match='Regsosek 2022')
+
+    entry_k_btn = app_dlg.children()[1].children()[0].children()[0].children()[1]
+    entry_k_btn.click()
+
+    filter_wilayah = app_dlg.children()[4].children(class_name='TabControl')[0].children()[0].children()[1].children()[0].children(class_name='ComboBox')
+
+    combo_kab = filter_wilayah[1]
+    combo_kab.type_keys("%{DOWN}")
+    list_kab = combo_kab.children()
+    # loop kab
+    for kab in list_kab[idx_start_kab:idx_end_kab]:
+        kab.select()
+        combo_kab.type_keys("%{ENTER}")
+
+        # loop kec
+        combo_kec = filter_wilayah[2]
+        combo_kec.type_keys("%{DOWN}")
+        list_kec = combo_kec.children()
+        for kec in tqdm(list_kec):
+            kec.select()
+            combo_kec.type_keys("%{ENTER}")
+        
+            # loop desa 
+            combo_desa = filter_wilayah[3]
+            combo_desa.type_keys("%{DOWN}")
+            list_desa = combo_desa.children()
+            for desa in tqdm(list_desa):
+                desa.select()
+                combo_desa.type_keys("%{ENTER}")
+
+                # loop sls
+
+                combo_sls = filter_wilayah[4]
+                combo_sls.type_keys("%{DOWN}")
+                list_sls = combo_sls.children()
+                for sls in tqdm(list_sls):
+                    sleep(1)
+                    try:
+                        sls.select()
+                    except:
+                        sls.click_input()
+                    
+                    combo_sls.type_keys("%{ENTER}")
+                    sleep(1)
+                    if(len(app_dlg.window(auto_id='grid_data').children())>1):
+                        # scroll up to top
+                        for scroll in range(100): 
+                            app_dlg.wheel_mouse_input(wheel_dist=50)
+
+                        list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                        nu_vk_max = int(list_k[0].children()[3].window_text())
+
+                        list_k_0 = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                        nu_vk_max = int(list_k[0].children()[3].window_text())
+
+                        n_loop = nu_vk_max // (len(list_k_0)-1)
+                        mod_loop = nu_vk_max % (len(list_k_0)-1)
+
+
+                        if(mod_loop>0):
+                            n_loop = n_loop+1
+
+                        print(f'nu vk max : {nu_vk_max}')
+                        print(f'visible rows : {len(list_k_0)-1}')
+                        print(f'n loop : {n_loop}')
+
+                        for n in range(n_loop):
+                            print(f'loop get data ke {n}')
+                            list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                            get_data(app, app_dlg, list_k, nu_vk_max, n, n_loop)  
+
+                            if (n < n_loop-1):
+                                for m in range(n_loop-1):
+                                    print(f'loop scroll ke {m}')
+                                    if(m >= (n_loop-2)):
+                                        for l in range(mod_loop):
+                                            app = Application(backend='uia').connect(best_match='Regsosek 2022')
+                                            app_dlg = app.window(best_match='Regsosek 2022')
+                                            list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                                            list_k[len(list_k)-2].click_input()
+                                            list_k[len(list_k)-2].click_input()
+                                            app_dlg.type_keys('{DOWN}')
+                                    else:
+                                        for l in range(len(list_k_0)):
+                                            app = Application(backend='uia').connect(best_match='Regsosek 2022')
+                                            app_dlg = app.window(best_match='Regsosek 2022')
+                                            list_k = app_dlg.window(auto_id='grid_data').children(control_type = 'DataItem')
+                                            list_k[len(list_k)-2].click_input()
+                                            list_k[len(list_k)-2].click_input()
+                                            app_dlg.type_keys('{DOWN}')
+
+
+from CONFIG import *
+scrap_regsosek(start_kab, end_kab)
